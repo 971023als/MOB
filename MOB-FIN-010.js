@@ -1,84 +1,105 @@
 Java.perform(function () {
-    var accountClass = Java.use("com.example.financial.AccountManager");
+    console.log("[*] 전자금융 비밀번호 변경 복잡도 검증 및 네트워크 요청 분석 시작...");
 
-    // ... 이전에 정의된 메소드들 ...
+    // ======================
+    // 1. 비밀번호 관리 클래스
+    // ======================
+    const PasswordManager = Java.use("com.example.bank.PasswordManager"); // 비밀번호 관리 클래스
+    const NetworkManager = Java.use("com.example.network.NetworkManager"); // 네트워크 관리 클래스
+    const UsedPasswords = []; // 과거에 사용된 비밀번호를 저장할 배열
 
-    // 비밀번호 패턴 유효성 검사 메소드
-    accountClass.isPasswordPatternInvalid.implementation = function (newPassword) {
-        // 연속된 숫자나 문자, 키보드 패턴 등을 확인
-        var pattern = /(?:12345|abcde|qwerty)/;
-        if (pattern.test(newPassword)) {
-            return true; // 유효하지 않은 패턴이면 true 반환
+    // ===========================================
+    // 2. 비밀번호 복잡도 검증
+    // ===========================================
+    function isPasswordComplexEnough(password) {
+        const minLength = 8;
+        const hasUpperCase = /[A-Z]/.test(password);
+        const hasLowerCase = /[a-z]/.test(password);
+        const hasNumber = /\d/.test(password);
+        const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(password);
+
+        if (password.length < minLength) {
+            console.log("[!] 비밀번호 복잡도 검증 실패: 길이가 충분하지 않습니다 (최소 8자)");
+            return false;
         }
-        return false; // 유효한 경우 false 반환
-    };
+        if (!hasUpperCase) {
+            console.log("[!] 비밀번호 복잡도 검증 실패: 대문자가 포함되어 있지 않습니다");
+            return false;
+        }
+        if (!hasLowerCase) {
+            console.log("[!] 비밀번호 복잡도 검증 실패: 소문자가 포함되어 있지 않습니다");
+            return false;
+        }
+        if (!hasNumber) {
+            console.log("[!] 비밀번호 복잡도 검증 실패: 숫자가 포함되어 있지 않습니다");
+            return false;
+        }
+        if (!hasSpecialChar) {
+            console.log("[!] 비밀번호 복잡도 검증 실패: 특수 문자가 포함되어 있지 않습니다");
+            return false;
+        }
 
-    // 보안 질문 검증 메소드
-    accountClass.verifySecurityQuestion.implementation = function (answer) {
-        var correctAnswer = "your_correct_answer"; // 실제 구현에서는 사용자별로 다를 수 있음
-        return answer === correctAnswer; // 답변이 정확한 경우 true 반환
-    };
-
-    // 사용자 활동 로그 기록 메소드
-    accountClass.logUserActivity.implementation = function (activity) {
-        console.log("User Activity: " + activity); // 로그 메시지 콘솔 출력
-    };
-
-    // 비밀번호 변경 메소드
-accountClass.changePassword.implementation = function (oldPassword, newPassword, securityAnswer) {
-    // 현재 비밀번호 확인
-    if (!this.verifyCurrentPassword(oldPassword)) {
-        this.logUserActivity("현재 비밀번호 불일치");
-        console.log("[경고]: 현재 비밀번호가 일치하지 않습니다.");
-        return false;
-    }
-
-    // 보안 질문 검증
-    if (!this.verifySecurityQuestion(securityAnswer)) {
-        this.logUserActivity("보안 질문 검증 실패");
-        console.log("[경고]: 보안 질문 검증 실패");
-        return false;
-    }
-
-    // 비밀번호 패턴 유효성 검사
-    if (this.isPasswordPatternInvalid(newPassword)) {
-        this.logUserActivity("비밀번호 패턴 유효성 검사 실패");
-        console.log("[경고]: 비밀번호가 요구하는 패턴을 충족하지 않습니다.");
-        return false;
-    }
-
-    // 새 비밀번호 강도 검증
-    if (!this.isPasswordStrong(newPassword)) {
-        this.logUserActivity("약한 비밀번호");
-        console.log("[경고]: 새 비밀번호가 충분히 강력하지 않습니다.");
-        return false;
-    }
-
-    // 이전 비밀번호 재사용 검증
-    if (this.hasPasswordBeenUsedRecently(newPassword)) {
-        this.logUserActivity("이전 비밀번호 재사용");
-        console.log("[경고]: 새 비밀번호는 최근 사용된 비밀번호와 달라야 합니다.");
-        return false;
-    }
-
-    // 비밀번호 암호화 및 데이터베이스 업데이트
-    try {
-        var encryptedNewPassword = this.encryptPassword(newPassword);
-        this.updatePasswordInDatabase(encryptedNewPassword); // 데이터베이스 업데이트 로직
-        this.recordPasswordChange(encryptedNewPassword); // 비밀번호 변경 기록
-
-        this.logUserActivity("비밀번호 변경 성공");
-        console.log("[알림]: 비밀번호가 성공적으로 변경되었습니다.");
+        console.log("[+] 비밀번호 복잡도 검증 통과");
         return true;
-    } catch (e) {
-        this.logUserActivity("비밀번호 변경 오류: " + e);
-        console.log("[오류]: 비밀번호 변경 중 오류 발생 - " + e);
-        return false;
     }
-};
 
-// ... 기타 메소드들 ...
+    PasswordManager.changePassword.implementation = function (oldPassword, newPassword) {
+        console.log("[*] changePassword 호출됨");
+        console.log(`[+] 기존 비밀번호: ${oldPassword}`);
+        console.log(`[+] 새 비밀번호: ${newPassword}`);
 
+        // 비밀번호 복잡도 검증
+        if (!isPasswordComplexEnough(newPassword)) {
+            console.log("[!] 비밀번호 복잡도 요건 미충족 → 변경 차단");
+            return false; // 복잡도 검증 실패로 변경 차단
+        }
 
-    // ... 기타 메소드들 ...
+        // 이전 비밀번호와 비교하여 재사용 여부 확인
+        if (UsedPasswords.includes(newPassword)) {
+            console.log("[!] 경고: 새 비밀번호가 과거에 사용된 비밀번호와 동일합니다 → 변경 차단");
+            return false; // 동일 비밀번호 재사용 차단
+        }
+
+        console.log("[+] 정상: 비밀번호 복잡도 및 재사용 검증 통과 → 변경 진행 허용");
+
+        // 원래 동작 수행
+        const result = this.changePassword(oldPassword, newPassword);
+        console.log(`[+] 비밀번호 변경 처리 결과: ${result}`);
+
+        // 비밀번호 변경 성공 시 새로운 비밀번호를 목록에 추가
+        if (result) {
+            UsedPasswords.push(newPassword);
+            console.log(`[+] 새 비밀번호가 과거 비밀번호 목록에 추가됨: ${newPassword}`);
+        }
+
+        return result;
+    };
+
+    // ===========================================
+    // 3. 네트워크 요청 분석 후킹
+    // ===========================================
+    NetworkManager.sendRequest.implementation = function (url, data) {
+        console.log(`[+] sendRequest 호출됨 - URL: ${url}`);
+        console.log(`[+] 요청 데이터: ${JSON.stringify(data)}`);
+
+        // 비밀번호 변경 요청 탐지
+        if (url.includes("/changePassword")) {
+            console.log("[!] 비밀번호 변경 요청 탐지");
+            const requestData = JSON.parse(data);
+            console.log(`[+] 요청 데이터 분석: ${JSON.stringify(requestData)}`);
+
+            // 요청 데이터 변조 테스트
+            if (requestData.newPassword === "weakpassword") {
+                console.log("[!] 경고: 약한 비밀번호가 네트워크 요청에 포함됨 → 변경 차단 가능성");
+                return null; // 요청을 차단하거나 변조
+            }
+        }
+
+        // 원래 동작 수행
+        const response = this.sendRequest(url, data);
+        console.log(`[+] 네트워크 요청 처리 결과: ${response}`);
+        return response;
+    };
+
+    console.log("[*] 전자금융 비밀번호 변경 복잡도 검증 및 네트워크 요청 분석 완료.");
 });

@@ -1,49 +1,72 @@
 Java.perform(function () {
-    var accountClass = Java.use("com.example.financial.AccountManager");
+    console.log("[*] 전자금융 악성코드 방지 프로세스 검증 및 테스트 시작...");
 
-    // ... 이전에 정의된 메소드들 ...
+    // ======================
+    // 1. 악성코드 방지 관련 클래스
+    // ======================
+    const MalwareProtectionManager = Java.use("com.example.security.MalwareProtectionManager"); // 악성코드 방지 클래스
+    const ProcessManager = Java.use("android.os.Process"); // 프로세스 관리 클래스
 
-    // 악성코드 탐지 메소드
-    accountClass.detectMalware.implementation = function () {
-        try {
-            var isAppIntegrityCompromised = checkAppIntegrity();
-            var isSuspiciousNetworkActivityDetected = checkNetworkActivity();
-            return isAppIntegrityCompromised || isSuspiciousNetworkActivityDetected;
-        } catch (e) {
-            console.log("악성코드 탐지 중 오류 발생: " + e);
-            return false;
-        }
+    // ===========================================
+    // 2. 악성코드 방지 프로세스 동작 검증
+    // ===========================================
+    MalwareProtectionManager.startProtection.implementation = function () {
+        console.log("[*] startProtection 호출됨");
+
+        // 악성코드 방지 프로세스 시작 여부를 로깅
+        const result = this.startProtection();
+        console.log(`[+] 악성코드 방지 프로세스 시작 결과: ${result}`);
+        return result;
     };
 
-    // 앱 무결성 검사
-    function checkAppIntegrity() {
-        try {
-            // 앱의 파일 시스템 무결성, 코드 서명 등을 검사
-            // 예시: APK 해시값 확인, 서명 인증 확인 등
-            // 실제 구현은 이곳에 추가
-            // ...
-            return false; // 구현에 따라 결과 반환
-        } catch (e) {
-            console.log("앱 무결성 검사 중 오류 발생: " + e);
-            return false;
+    MalwareProtectionManager.isProtectionRunning.implementation = function () {
+        console.log("[*] isProtectionRunning 호출됨");
+
+        // 악성코드 방지 프로세스 상태를 확인
+        const result = this.isProtectionRunning();
+        console.log(`[+] 악성코드 방지 프로세스 실행 중: ${result}`);
+        return result;
+    };
+
+    // ===========================================
+    // 3. 악성코드 방지 프로세스 강제 종료 테스트
+    // ===========================================
+    MalwareProtectionManager.terminateProtection.implementation = function () {
+        console.log("[*] terminateProtection 호출됨");
+
+        // 원래 동작 수행
+        const result = this.terminateProtection();
+        console.log("[!] 악성코드 방지 프로세스가 강제로 종료되었습니다.");
+        return result;
+    };
+
+    // ===========================================
+    // 4. 강제 종료 후 재구동 여부 검증
+    // ===========================================
+    MalwareProtectionManager.restartProtection.implementation = function () {
+        console.log("[*] restartProtection 호출됨");
+
+        // 원래 동작 수행
+        const result = this.restartProtection();
+        console.log(`[+] 악성코드 방지 프로세스 재구동 결과: ${result}`);
+        return result;
+    };
+
+    // ===========================================
+    // 5. 강제 프로세스 종료 후 테스트
+    // ===========================================
+    ProcessManager.killProcess.implementation = function (pid) {
+        console.log(`[!] killProcess 호출됨 - 종료 대상 PID: ${pid}`);
+
+        // 특정 프로세스 강제 종료 감지 및 재구동 로직 수행 여부 확인
+        if (pid === MalwareProtectionManager.getProtectionPID()) {
+            console.log("[!] 악성코드 방지 프로세스 강제 종료 감지 → 재구동 테스트 실행");
+            MalwareProtectionManager.restartProtection();
         }
-    }
 
-    // 비정상적인 네트워크 활동 감지
-    function checkNetworkActivity() {
-        try {
-            // 네트워크 트래픽 모니터링 및 분석
-            // 예시: 비정상적인 데이터 전송, 알려진 악성 도메인과의 통신 탐지 등
-            // 실제 구현은 이곳에 추가
-            // ...
-            return false; // 구현에 따라 결과 반환
-        } catch (e) {
-            console.log("네트워크 활동 검사 중 오류 발생: " + e);
-            return false;
-        }
-    }
+        // 원래 동작 수행
+        this.killProcess(pid);
+    };
 
-    // ... 기존 비밀번호 변경 메소드 ...
-
-    // ... 기타 메소드들 ...
+    console.log("[*] 전자금융 악성코드 방지 프로세스 검증 및 테스트 완료.");
 });

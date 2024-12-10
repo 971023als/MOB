@@ -1,45 +1,47 @@
 Java.perform(function () {
-    // 난독화된 클래스와 메소드 후킹
-    var targetClass = Java.use("com.example.obfuscated.ClassName");
-    var obfuscatedMethod = targetClass.obfuscatedMethod;
-    obfuscatedMethod.implementation = function (arg) {
-        console.log("난독화된 메소드 호출됨: " + arg);
-        var result = obfuscatedMethod.call(this, arg);
-        console.log("결과: " + result);
-        return result;
-    };
+    console.log("[*] 소스코드 난독화 적용 여부 점검 시작...");
 
-    // 리플렉션 사용 감시
-    var ReflectMethod = Java.use("java.lang.reflect.Method");
-    ReflectMethod.invoke.overload('java.lang.Object', '[Ljava.lang.Object;').implementation = function (obj, args) {
-        console.log("리플렉션을 통한 메소드 호출 감지: " + this.getName());
-        return this.invoke(obj, args);
-    };
+    // ======================
+    // 1. 주요 클래스 이름 분석
+    // ======================
+    const loadedClasses = Java.enumerateLoadedClassesSync();
 
-    // 클래스 로딩 감시
-    var ClassLoader = Java.use("java.lang.ClassLoader");
-    ClassLoader.loadClass.overload('java.lang.String').implementation = function (name) {
-        console.log("클래스 로드 감지: " + name);
-        return this.loadClass(name);
-    };
+    console.log("[+] 로드된 클래스 분석 시작...");
+    loadedClasses.forEach(function (className) {
+        if (!isObfuscated(className)) {
+            console.log(`[!] 난독화되지 않은 클래스 감지: ${className}`);
+        }
+    });
 
-    // 네트워크 통신 감시
-    var HttpURLConnection = Java.use("java.net.HttpURLConnection");
-    HttpURLConnection.getOutputStream.implementation = function () {
-        console.log("HttpURLConnection을 통한 네트워크 통신 감지");
-        return this.getOutputStream();
-    };
+    // ======================
+    // 2. 주요 메서드 이름 분석
+    // ======================
+    const packageName = "com.example.app"; // 대상 패키지 이름 설정
+    const targetClasses = loadedClasses.filter(c => c.startsWith(packageName));
 
-    // 추가적인 동적 행동 감시
-    var Runtime = Java.use("java.lang.Runtime");
-    Runtime.exec.overload('java.lang.String').implementation = function (command) {
-        console.log("Runtime.exec 호출 감지: " + command);
-        return this.exec(command);
-    };
+    targetClasses.forEach(function (className) {
+        try {
+            const klass = Java.use(className);
+            const methods = klass.class.getDeclaredMethods();
+            methods.forEach(function (method) {
+                const methodName = method.getName();
+                if (!isObfuscated(methodName)) {
+                    console.log(`[!] 난독화되지 않은 메서드 감지 - 클래스: ${className}, 메서드: ${methodName}`);
+                }
+            });
+        } catch (err) {
+            console.log(`[!] 메서드 분석 중 오류 발생 - 클래스: ${className}, 오류: ${err.message}`);
+        }
+    });
 
-    var ProcessBuilder = Java.use("java.lang.ProcessBuilder");
-    ProcessBuilder.start.implementation = function () {
-        console.log("ProcessBuilder.start 호출 감지");
-        return this.start.call(this);
-    };
+    console.log("[*] 소스코드 난독화 적용 여부 점검 완료.");
+
+    // ======================
+    // 난독화 감지 함수
+    // ======================
+    function isObfuscated(name) {
+        // 난독화된 이름의 특징을 기반으로 판단 (예: 짧거나 무의미한 이름)
+        const obfuscatedPattern = /^[a-zA-Z]{1,2}$/; // 예: "a", "ab", "x1"
+        return obfuscatedPattern.test(name);
+    }
 });
