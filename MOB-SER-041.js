@@ -1,11 +1,11 @@
 Java.perform(function () {
-    console.log("[*] Starting Enhanced XSS Detection Hook");
+    console.log("[*] 확장된 XSS 탐지 후킹 스크립트 시작");
 
     // WebView 및 HTTP 요청 관련 클래스 로드
     var WebViewClass = Java.use("android.webkit.WebView");
     var OkHttpClientClass = Java.use("okhttp3.OkHttpClient");
 
-    // 확장된 XSS 의심 패턴
+    // 확장된 XSS 의심 패턴 목록
     var xssPatterns = [
         "<script", "</script>", "javascript:", "onerror=", "onload=", "alert(",
         "prompt(", "confirm(", "eval(", "setTimeout(", "setInterval(", "document.cookie",
@@ -18,42 +18,45 @@ Java.perform(function () {
         "onfocus=", "onblur=", "onkeypress=", "onkeyup=", "onkeydown=",
         "onmouseover=", "onmouseout=", "onclick=", "onsubmit=", "onreset=",
         "onchange=", "oninput=", "onscroll=", "onwheel=", "onresize=", "onunload=",
-        "fetch(", "XMLHttpRequest", "ActiveXObject", "getResponseHeader", "send("
+        "fetch(", "XMLHttpRequest", "ActiveXObject", "getResponseHeader", "send(",
+        "<audio", "<video", "<track", "<source", "<picture", "<canvas", "<applet",
+        "background=", "style=", "script:", "xlink:href", "aria-label=", "tabindex="
     ];
 
     // WebView.loadUrl 메서드 후킹
     WebViewClass.loadUrl.overload('java.lang.String').implementation = function (url) {
-        console.log("[*] WebView Loading URL: " + url);
+        console.log(`[+] WebView에서 URL 로드 중: ${url}`);
 
         // URL에서 XSS 패턴 검색
-        for (var i = 0; i < xssPatterns.length; i++) {
-            if (url.toLowerCase().includes(xssPatterns[i])) {
-                console.warn("[!] Potential XSS Detected in URL: " + url);
-                console.warn("[!] Suspicious Pattern: " + xssPatterns[i]);
+        xssPatterns.forEach(function (pattern) {
+            if (url.toLowerCase().includes(pattern)) {
+                console.warn(`[!] XSS 의심 URL 탐지: ${url}`);
+                console.warn(`[!] 의심 패턴: ${pattern}`);
             }
-        }
+        });
+
         return this.loadUrl(url);
     };
 
     // OkHttpClient.newCall 메서드 후킹
     OkHttpClientClass.newCall.overload('okhttp3.Request').implementation = function (request) {
         var url = request.url().toString();
-        var body = request.body() ? request.body().toString() : "No Body";
+        var body = request.body() ? request.body().toString() : "본문 없음";
 
-        console.log("[*] HTTP Request: " + url);
-        console.log("[*] Request Body: " + body);
+        console.log(`[+] HTTP 요청 탐지 - URL: ${url}`);
+        console.log(`[+] 요청 본문: ${body}`);
 
         // 요청 데이터에서 XSS 패턴 검색
-        for (var i = 0; i < xssPatterns.length; i++) {
-            if (body.toLowerCase().includes(xssPatterns[i]) || url.toLowerCase().includes(xssPatterns[i])) {
-                console.warn("[!] Potential XSS Detected in HTTP Request: " + url);
-                console.warn("[!] Suspicious Pattern: " + xssPatterns[i]);
-                console.warn("[!] Suspicious Body: " + body);
+        xssPatterns.forEach(function (pattern) {
+            if (body.toLowerCase().includes(pattern) || url.toLowerCase().includes(pattern)) {
+                console.warn(`[!] HTTP 요청에서 XSS 의심 패턴 탐지: ${url}`);
+                console.warn(`[!] 의심 패턴: ${pattern}`);
+                console.warn(`[!] 의심 본문: ${body}`);
             }
-        }
+        });
 
         return this.newCall(request);
     };
 
-    console.log("[*] Enhanced XSS Detection Hooks Installed");
+    console.log("[*] 확장된 XSS 탐지 후킹 완료");
 });

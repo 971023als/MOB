@@ -1,26 +1,30 @@
 Java.perform(function () {
-    console.log("[*] Starting Admin Page Access Monitoring");
+    console.log("[*] 관리자 페이지 접근 모니터링 시작");
 
-    // OkHttpClient 클래스 후킹
+    // OkHttpClient 및 관련 클래스 로드
     var OkHttpClientClass = Java.use("okhttp3.OkHttpClient");
-    var RequestClass = Java.use("okhttp3.Request");
-    var HttpUrlClass = Java.use("okhttp3.HttpUrl");
 
-    // HTTP Request 확인
+    // HTTP 요청 후킹
     OkHttpClientClass.newCall.overload('okhttp3.Request').implementation = function (request) {
         var url = request.url().toString();
-        console.log("[*] HTTP Request Sent: " + url);
+        console.log(`[+] HTTP 요청 감지됨 - URL: ${url}`);
 
-        // 관리자 페이지 URL 패턴 탐지
-        var adminPaths = ["/admin", "/administrator", "/admin/login", "/admin-panel", "/manage"];
-        for (var i = 0; i < adminPaths.length; i++) {
-            if (url.includes(adminPaths[i])) {
-                console.warn("[!] Potential Admin Page Access Detected: " + url);
+        // 관리자 페이지 경로 리스트
+        var adminPaths = [
+            "/admin", "/administrator", "/admin/login", "/admin-panel", "/manage",
+            "/control", "/dashboard", "/adminarea", "/adminconsole", "/superuser"
+        ];
+
+        // URL에서 관리자 페이지 접근 탐지
+        adminPaths.forEach(function (path) {
+            if (url.includes(path)) {
+                console.warn(`[!] 관리자 페이지 접근 탐지됨: ${url}`);
+                console.warn(`[!] 문제 경로: ${path}`);
             }
-        }
+        });
 
         return this.newCall(request);
     };
 
-    console.log("[*] Admin Page Access Monitoring Hooks Installed");
+    console.log("[*] 관리자 페이지 접근 모니터링 후킹 설치 완료");
 });
