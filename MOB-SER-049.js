@@ -75,3 +75,5 @@ Java.perform(function () {
 
     console.log("[*] Authentication Method Verification Hook Script Installed");
 });
+
+민감한 키워드 목록 정의 많이 늘리고 분기문도 추가해서 만들어줘
