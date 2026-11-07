@@ -22,10 +22,17 @@ Java.perform(function () {
     // ======================
     // 2. 비밀번호 등록 및 변경 로직 후킹
     // ======================
+
+    // 민감정보 평문 로깅 방지: 값 대신 길이만 남긴다
+    function mask(value) {
+        if (value === null || value === undefined) return "(null)";
+        return "***" + "(len=" + value.toString().length + ")";
+    }
+
     const PasswordManager = Java.use("com.example.app.PasswordManager"); // 예시 클래스 이름
 
     PasswordManager.registerPassword.implementation = function (password) {
-        console.log(`[+] 비밀번호 등록 요청: ${password}`);
+        console.log(`[+] 비밀번호 등록 요청: ${mask(password)}`);
 
         if (!isPasswordComplex(password)) {
             console.log("[!] 경고: 비밀번호 복잡도 기준 미충족!");
@@ -45,7 +52,7 @@ Java.perform(function () {
     };
 
     PasswordManager.changePassword.implementation = function (oldPassword, newPassword) {
-        console.log(`[+] 비밀번호 변경 요청: 기존 비밀번호 - ${oldPassword}, 새로운 비밀번호 - ${newPassword}`);
+        console.log(`[+] 비밀번호 변경 요청: 기존 비밀번호 - ${mask(oldPassword)}, 새로운 비밀번호 - ${mask(newPassword)}`);
 
         if (!isPasswordComplex(newPassword)) {
             console.log("[!] 경고: 새로운 비밀번호가 복잡도 기준을 충족하지 못했습니다.");
@@ -100,8 +107,8 @@ Java.perform(function () {
     function alertUser(message) {
         Java.scheduleOnMainThread(function () {
             const context = Java.use("android.app.ActivityThread").currentApplication().getApplicationContext();
-            const AlertDialog = Java.use("android.app.AlertDialog");
-            const Builder = AlertDialog.Builder;
+            // 중첩 클래스는 외부 클래스의 속성이 아니라 $ 이름으로 직접 로드해야 함
+            const Builder = Java.use("android.app.AlertDialog$Builder");
 
             const builder = Builder.$new(context);
             builder.setTitle("보안 경고");

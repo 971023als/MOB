@@ -7,6 +7,7 @@ Java.perform(function () {
 
     OkHttpResponse.body.implementation = function () {
         var body = this.body();
+        // string()은 스트림을 소비하므로, 아래에서 새 ResponseBody로 되돌려 준다.
         var content = body.string(); // 응답 본문 추출
 
         // 민감 정보 패턴 탐지
@@ -25,7 +26,8 @@ Java.perform(function () {
             }
         }
 
-        return body; // 원래 응답 반환
+        // 소비된 바디 대신 동일 내용의 새 ResponseBody 반환
+        return Java.use("okhttp3.ResponseBody").create(body.contentType(), content);
     };
 
     // Logcat에서 시스템 정보 로그 확인

@@ -6,21 +6,15 @@ Java.perform(function () {
     var OkHttpClientClass = Java.use("okhttp3.OkHttpClient");
 
     // 확장된 XSS 의심 패턴 목록
+    // 고신호 XSS 패턴만 남김.
+    // 기존 목록의 href=, style=, <img, aria-label=, send(, URL= 등은 일반 HTML/JS에 흔해
+    // 사실상 모든 페이지·요청을 "XSS 의심"으로 오탐했다.
     var xssPatterns = [
-        "<script", "</script>", "javascript:", "onerror=", "onload=", "alert(",
-        "prompt(", "confirm(", "eval(", "setTimeout(", "setInterval(", "document.cookie",
-        "document.domain", "document.write", "window.location", "window.name",
-        "window.open", "window.history", "localStorage", "sessionStorage",
-        "innerHTML", "outerHTML", "srcdoc=", "href=", "<iframe", "</iframe>",
-        "<svg", "</svg>", "<math", "<meta", "<link", "base64,", "data:text/html",
-        "data:text/javascript", "data:text/css", "<object", "<embed", "javascript:void",
-        "vbscript:", "expression(", "URL=", "xmlns=", "<img", "<body", "<base",
-        "onfocus=", "onblur=", "onkeypress=", "onkeyup=", "onkeydown=",
-        "onmouseover=", "onmouseout=", "onclick=", "onsubmit=", "onreset=",
-        "onchange=", "oninput=", "onscroll=", "onwheel=", "onresize=", "onunload=",
-        "fetch(", "XMLHttpRequest", "ActiveXObject", "getResponseHeader", "send(",
-        "<audio", "<video", "<track", "<source", "<picture", "<canvas", "<applet",
-        "background=", "style=", "script:", "xlink:href", "aria-label=", "tabindex="
+        "<script", "javascript:", "vbscript:", "data:text/html",
+        "onerror=", "onload=", "onfocus=", "onclick=", "onmouseover=",
+        "alert(", "prompt(", "confirm(", "eval(",
+        "document.cookie", "document.write", "srcdoc=",
+        "<iframe", "<object", "<embed", "expression("
     ];
 
     // WebView.loadUrl 메서드 후킹

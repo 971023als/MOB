@@ -1,6 +1,15 @@
 Java.perform(function () {
     console.log("[*] TLS 재협상 취약점 점검 시작");
 
+
+    // Frida의 Java 배열(String[])에는 join/forEach가 없으므로 JS 배열로 변환해 사용
+    function toJsArray(javaArray) {
+        var arr = [];
+        if (javaArray === null) return arr;
+        for (var i = 0; i < javaArray.length; i++) arr.push(javaArray[i]);
+        return arr;
+    }
+
     // SSLContext 클래스 후킹
     var SSLContextClass = Java.use("javax.net.ssl.SSLContext");
 
@@ -13,7 +22,7 @@ Java.perform(function () {
 
         this.init(keyManagers, trustManagers, secureRandom);
 
-        var protocols = this.getSupportedSSLParameters().getProtocols();
+        var protocols = toJsArray(this.getSupportedSSLParameters().getProtocols());
         console.log("[*] 지원되는 프로토콜: " + protocols.join(", "));
 
         protocols.forEach(function (protocol) {
@@ -30,9 +39,10 @@ Java.perform(function () {
 
         SSLParametersClass.setProtocols.implementation = function (protocols) {
             console.log("[*] SSLParameters.setProtocols() 후킹됨");
-            console.log("[*] 설정된 프로토콜: " + protocols.join(", "));
+            var protocolList = toJsArray(protocols);
+            console.log("[*] 설정된 프로토콜: " + protocolList.join(", "));
 
-            protocols.forEach(function (protocol) {
+            protocolList.forEach(function (protocol) {
                 if (protocol === "SSLv3" || protocol === "TLSv1.0") {
                     console.warn(`[!] 취약한 프로토콜 탐지됨: ${protocol}`);
                     console.warn("[!] 재협상 설정 점검 필요");
@@ -60,7 +70,7 @@ Java.perform(function () {
             var sslSocket = this.createSocket(socket, host, port, autoClose);
             console.log(`[+] 생성된 SSL 소켓 - 호스트: ${host}`);
 
-            var enabledProtocols = sslSocket.getEnabledProtocols();
+            var enabledProtocols = toJsArray(sslSocket.getEnabledProtocols());
             console.log("[*] 활성화된 프로토콜: " + enabledProtocols.join(", "));
 
             enabledProtocols.forEach(function (protocol) {

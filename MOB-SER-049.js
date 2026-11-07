@@ -9,6 +9,13 @@ Java.perform(function () {
     ];
 
     // 인증 관련 클래스 후킹
+
+    // 민감정보 평문 로깅 방지: 값 대신 길이만 남긴다
+    function mask(value) {
+        if (value === null || value === undefined) return "(null)";
+        return "***" + "(len=" + value.toString().length + ")";
+    }
+
     var AuthClass = Java.use("com.example.app.AuthManager"); // 앱의 실제 인증 클래스명 사용
     var SmsManager = Java.use("android.telephony.SmsManager");
     var KeyStore = Java.use("java.security.KeyStore");
@@ -16,10 +23,10 @@ Java.perform(function () {
 
     // 인증서 등록 및 사용 검증
     AuthClass.registerCertificate.implementation = function (certData) {
-        console.log("[+] 인증서 등록 시도 감지: " + certData);
+        console.log("[+] 인증서 등록 시도 감지: " + mask(certData));
         for (var i = 0; i < sensitiveKeywords.length; i++) {
             if (certData.includes(sensitiveKeywords[i])) {
-                console.warn("[!] 민감한 데이터 감지됨 (인증서 등록 중): " + certData);
+                console.warn("[!] 민감한 데이터 감지됨 (인증서 등록 중): " + mask(certData));
             }
         }
         if (certData.length < 10) {
@@ -39,11 +46,11 @@ Java.perform(function () {
     // SMS 인증 코드 검증
     SmsManager.sendTextMessage.overload('java.lang.String', 'java.lang.String', 'java.lang.String', 'android.app.PendingIntent', 'android.app.PendingIntent').implementation = function (destinationAddress, scAddress, text, sentIntent, deliveryIntent) {
         console.log("[+] SMS 전송 시도 감지:");
-        console.log("    수신자 주소: " + destinationAddress);
-        console.log("    메시지 내용: " + text);
+        console.log("    수신자 주소: " + mask(destinationAddress));
+        console.log("    메시지 내용: " + mask(text));
         for (var i = 0; i < sensitiveKeywords.length; i++) {
             if (text.includes(sensitiveKeywords[i])) {
-                console.warn("[!] SMS 내 민감한 데이터 감지됨: " + text);
+                console.warn("[!] SMS 내 민감한 데이터 감지됨: " + mask(text));
             }
         }
         if (destinationAddress.startsWith("+999") || text.includes("test")) {
@@ -54,21 +61,21 @@ Java.perform(function () {
 
     // 계좌 인증 검증
     AuthClass.verifyAccount.overload('java.lang.String', 'java.lang.String').implementation = function (accountNumber, authCode) {
-        console.log("[+] 계좌 검증 시도: 계좌번호 = " + accountNumber + ", 인증코드 = " + authCode);
+        console.log("[+] 계좌 검증 시도: 계좌번호 = " + mask(accountNumber) + ", 인증코드 = " + mask(authCode));
         if (accountNumber.includes("0000") || accountNumber.includes("test") || accountNumber.length < 8) {
-            console.warn("[!] 비정상 계좌번호 감지됨: " + accountNumber);
+            console.warn("[!] 비정상 계좌번호 감지됨: " + mask(accountNumber));
         }
         if (authCode.length < 4) {
-            console.warn("[!] 약한 인증코드 감지됨: " + authCode);
+            console.warn("[!] 약한 인증코드 감지됨: " + mask(authCode));
         }
         return this.verifyAccount(accountNumber, authCode);
     };
 
     // OTP 인증 검증
     AuthClass.verifyOtp.overload('java.lang.String').implementation = function (otpCode) {
-        console.log("[+] OTP 코드 검증 시도: " + otpCode);
+        console.log("[+] OTP 코드 검증 시도: " + mask(otpCode));
         if (otpCode.length < 6 || otpCode.match(/^[0-9]{6}$/) === null) {
-            console.warn("[!] 약한 또는 비정상 OTP 코드 감지됨: " + otpCode);
+            console.warn("[!] 약한 또는 비정상 OTP 코드 감지됨: " + mask(otpCode));
         }
         return this.verifyOtp(otpCode);
     };

@@ -13,7 +13,9 @@ Java.perform(function () {
         console.log("[+] 화면 설정 감지: Layout ID - " + layoutResID);
 
         // 캡처 방지 플래그 추가
-        this.getWindow().setFlags(0x80000000, 0x80000000); // FLAG_SECURE
+        // WindowManager.LayoutParams.FLAG_SECURE = 0x00002000 (기존 0x80000000은 FLAG_SECURE가 아니라 무효한 비트)
+        const FLAG_SECURE = 0x00002000;
+        this.getWindow().setFlags(FLAG_SECURE, FLAG_SECURE);
         console.log("[+] 화면 캡처 방지 적용 완료");
 
         return this.setContentView(layoutResID);
@@ -51,8 +53,8 @@ Java.perform(function () {
     function alertUser(message) {
         Java.scheduleOnMainThread(function () {
             const context = Java.use("android.app.ActivityThread").currentApplication().getApplicationContext();
-            const AlertDialog = Java.use("android.app.AlertDialog");
-            const Builder = AlertDialog.Builder;
+            // 중첩 클래스는 외부 클래스의 속성이 아니라 $ 이름으로 직접 로드해야 함
+            const Builder = Java.use("android.app.AlertDialog$Builder");
 
             const builder = Builder.$new(context);
             builder.setTitle("보안 경고");

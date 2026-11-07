@@ -4,7 +4,13 @@ Java.perform(function () {
     // ======================
     // 1. 거래정보 관련 클래스 및 메서드
     // ======================
-    const TransactionManager = Java.use("com.example.bank.TransactionManager"); // 거래 관리 클래스
+    let TransactionManager;
+    try {
+        TransactionManager = Java.use("com.example.bank.TransactionManager"); // 거래 관리 클래스 (자리표시자: 실제 앱 클래스명으로 교체 필요)
+    } catch (e) {
+        console.log("[-] com.example.bank.TransactionManager를 찾을 수 없습니다. 실제 앱의 클래스명으로 교체 후 다시 로드하세요.");
+        return;
+    }
     const TransactionCache = {}; // 이미 사용된 거래 정보를 저장할 캐시
 
     // ===========================================
@@ -45,7 +51,11 @@ Java.perform(function () {
         const charset = Java.use("java.nio.charset.StandardCharsets").UTF_8;
         const digest = crypto.getInstance("SHA-256");
         const byteArray = digest.digest(data.toString().getBytes(charset));
-        const hash = byteArray.map(b => (b & 0xFF).toString(16).padStart(2, "0")).join("");
+        // Java byte[]에는 JS map이 없으므로 루프로 16진수 변환
+        let hash = "";
+        for (let i = 0; i < byteArray.length; i++) {
+            hash += ("0" + (byteArray[i] & 0xFF).toString(16)).slice(-2);
+        }
         console.log(`[+] 거래 데이터 해시 생성됨: ${hash}`);
         return hash;
     }

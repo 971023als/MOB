@@ -4,6 +4,13 @@ Java.perform(function () {
     // ======================
     // 1. 입력 정보 관리 클래스
     // ======================
+
+    // 민감정보 평문 로깅 방지: 값 대신 길이만 남긴다
+    function mask(value) {
+        if (value === null || value === undefined) return "(null)";
+        return "***" + "(len=" + value.toString().length + ")";
+    }
+
     const EditText = Java.use("android.widget.EditText"); // 사용자 입력 위젯 클래스
     const InputConnection = Java.use("android.view.inputmethod.InputConnection"); // 입력 메서드 연결 클래스
 
@@ -12,7 +19,7 @@ Java.perform(function () {
     // ===========================================
     EditText.getText.implementation = function () {
         const inputText = this.getText().toString();
-        console.log(`[+] getText 호출됨 - 입력된 값: ${inputText}`);
+        console.log(`[+] getText 호출됨 - 입력된 값: ${mask(inputText)}`);
 
         // 민감한 정보 입력 여부 감지
         if (inputText.includes("password") || inputText.includes("pin") || inputText.includes("account")) {
@@ -28,7 +35,7 @@ Java.perform(function () {
     // 3. EditText.setText() 후킹
     // ===========================================
     EditText.setText.overload('java.lang.CharSequence').implementation = function (text) {
-        console.log(`[+] setText 호출됨 - 설정 값: ${text}`);
+        console.log(`[+] setText 호출됨 - 설정 값: ${mask(text)}`);
 
         // 입력 보호 범위 확인
         if (text.toString().includes("password") || text.toString().includes("pin")) {
@@ -43,7 +50,7 @@ Java.perform(function () {
     // 4. InputConnection 관련 보호 점검
     // ===========================================
     InputConnection.commitText.implementation = function (text, newCursorPosition) {
-        console.log(`[+] commitText 호출됨 - 입력된 값: ${text}`);
+        console.log(`[+] commitText 호출됨 - 입력된 값: ${mask(text)}`);
 
         // 입력값 보호 범위 확인
         if (text.toString().includes("password") || text.toString().includes("pin")) {

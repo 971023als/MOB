@@ -19,14 +19,17 @@ Java.perform(function () {
         var body = this.body();
 
         console.log("[*] HTTP 응답 감지");
-        var content = body.string(); // 응답 내용을 문자열로 변환
+        // ResponseBody.string()은 스트림을 소비한다. 그대로 반환하면 앱이 빈 바디를 받으므로
+        // 읽은 내용으로 새 ResponseBody를 만들어 반환한다.
+        var content = body.string();
 
         if (content.includes("Index of /") || content.match(/<title>Index of/)) {
             console.warn("[!] 디렉토리 인덱싱 감지됨!");
             console.log("    응답 내용: " + content.substring(0, 200) + "..."); // 응답의 일부 출력
         }
 
-        return body;
+        var ResponseBody = Java.use("okhttp3.ResponseBody");
+        return ResponseBody.create(body.contentType(), content);
     };
 
     // URLConnection의 응답 처리 감지

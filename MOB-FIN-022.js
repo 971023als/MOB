@@ -55,8 +55,8 @@ Java.perform(function () {
 
         Java.scheduleOnMainThread(function () {
             const context = Java.use("android.app.ActivityThread").currentApplication().getApplicationContext();
-            const AlertDialog = Java.use("android.app.AlertDialog");
-            const Builder = AlertDialog.Builder;
+            // 중첩 클래스는 외부 클래스의 속성이 아니라 $ 이름으로 직접 로드해야 함
+            const Builder = Java.use("android.app.AlertDialog$Builder");
 
             const builder = Builder.$new(context);
             builder.setTitle("보안 경고");

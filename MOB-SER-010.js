@@ -2,6 +2,12 @@ Java.perform(function () {
     console.log("[*] 파일 다운로드 보안 검사 시작...");
 
     const HttpURLConnection = Java.use("java.net.HttpURLConnection");
+    const Thread = Java.use("java.lang.Thread");
+
+    // true로 바꾸면 허용 목록 밖 다운로드를 예외로 차단한다. 기본값 false(탐지만).
+    const BLOCK_DISALLOWED_DOWNLOADS = false;
+    // true로 바꾸면 다운로드 로그를 외부 서버로 전송한다. 기본값 false(로컬 저장만).
+    const ENABLE_REMOTE_LOG_UPLOAD = false;
 
     HttpURLConnection.getInputStream.implementation = function () {
         const connection = this;
@@ -14,17 +20,28 @@ Java.perform(function () {
 
         // 파일 다운로드 허용 여부 검사
         if (!isAllowedFile(targetUrl, fileSize, connection)) {
-            console.warn("[!] 민감한 파일 다운로드 차단!");
-            logSensitiveDownload(targetUrl);
-            alertUser(`다운로드 차단됨: ${targetUrl}`);
-            throw new Error("다운로드가 허용되지 않은 파일입니다.");
+            console.warn("[!] 허용되지 않은 파일 다운로드 감지");
+            alertUser(`허용되지 않은 다운로드 감지: ${targetUrl}`);
+            if (BLOCK_DISALLOWED_DOWNLOADS) {
+                throw new Error("다운로드가 허용되지 않은 파일입니다.");
+            }
         }
 
         // 속도 제한 적용
         const limitedStream = limitDownloadSpeed(inputStream, fileSize);
 
-        // 로그 중앙 저장 (RSA 암호화 적용)
-        sendLogToServer(targetUrl, fileSize);
+        // [결정 필요] 외부 로그 서버 전송은 기본 비활성.
+        // 앱 사용자의 다운로드 URL을 외부로 보내는 행위이므로 켜기 전에 목적·수신 서버를 합의해야 한다.
+        if (ENABLE_REMOTE_LOG_UPLOAD) {
+            sendLogToServer(targetUrl, fileSize);
+        } else {
+            saveLogLocally(JSON.stringify({
+                timestamp: new Date().toISOString(),
+                url: targetUrl,
+                fileSize: fileSize,
+                action: "DOWNLOAD_ATTEMPT"
+            }));
+        }
 
         return limitedStream;
     };
@@ -69,20 +86,22 @@ Java.perform(function () {
     // ======================
     function limitDownloadSpeed(inputStream, fileSize) {
         const ByteArrayInputStream = Java.use("java.io.ByteArrayInputStream");
-        const originalBytes = Java.array("byte", []);
-        const limitedBytes = [];
+        // 기존 코드는 길이 0 버퍼로 read()를 호출해 영원히 0만 반환되는 무한 루프였다.
+        const buffer = Java.array("byte", new Array(8192).fill(0));
+        const ByteArrayOutputStream = Java.use("java.io.ByteArrayOutputStream");
+        const collected = ByteArrayOutputStream.$new();
         let bytesRead = 0;
 
         // 동적 속도 설정
         const delay = fileSize > 5 * 1024 * 1024 ? 100 : 50; // 5MB 이상 파일은 느리게 다운로드
         console.log(`[+] 속도 제한: ${delay}ms per read`);
 
-        while ((bytesRead = inputStream.read(originalBytes)) !== -1) {
-            limitedBytes.push.apply(limitedBytes, originalBytes.slice(0, bytesRead));
+        while ((bytesRead = inputStream.read(buffer)) !== -1) {
+            collected.write(buffer, 0, bytesRead);
             Thread.sleep(delay);
         }
 
-        return ByteArrayInputStream.$new(Java.array("byte", limitedBytes));
+        return ByteArrayInputStream.$new(collected.toByteArray());
     }
 
     // ======================
@@ -129,6 +148,8 @@ Java.perform(function () {
         const Base64 = Java.use("android.util.Base64");
 
         // RSA 공개키 (PEM 형식에서 가져온 키)
+        // [주의] 아래 키는 중간이 잘린 자리표시자라 generatePublic이 실패한다.
+        // ENABLE_REMOTE_LOG_UPLOAD를 켜기 전에 실제 로그 서버의 공개키로 교체해야 한다.
         const publicKeyString = `
             -----BEGIN PUBLIC KEY-----
             MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAvrC7O...
@@ -169,8 +190,8 @@ Java.perform(function () {
     function alertUser(message) {
         Java.scheduleOnMainThread(function () {
             const context = Java.use("android.app.ActivityThread").currentApplication().getApplicationContext();
-            const AlertDialog = Java.use("android.app.AlertDialog");
-            const Builder = AlertDialog.Builder;
+            // 중첩 클래스는 외부 클래스의 속성이 아니라 $ 이름으로 직접 로드해야 함
+            const Builder = Java.use("android.app.AlertDialog$Builder");
 
             const builder = Builder.$new(context);
             builder.setTitle("보안 경고");
