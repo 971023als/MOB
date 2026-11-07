@@ -15,11 +15,18 @@ Java.perform(function () {
     // ======================
     // 2. 비밀번호 초기화 로직 후킹
     // ======================
+
+    // 민감정보 평문 로깅 방지: 값 대신 길이만 남긴다
+    function mask(value) {
+        if (value === null || value === undefined) return "(null)";
+        return "***" + "(len=" + value.toString().length + ")";
+    }
+
     const PasswordResetManager = Java.use("com.example.app.PasswordResetManager"); // 비밀번호 초기화 클래스 (예시)
 
     PasswordResetManager.resetPassword.implementation = function (userId) {
         const newPassword = this.resetPassword(userId); // 기존 로직 호출
-        console.log(`[+] 초기화된 비밀번호: ${newPassword} (사용자 ID: ${userId})`);
+        console.log(`[+] 초기화된 비밀번호: ${mask(newPassword)} (사용자 ID: ${userId})`);
 
         if (isPasswordPredictable(newPassword)) {
             console.log("[!] 경고: 유추 가능한 초기화 비밀번호 생성 감지!");
@@ -32,7 +39,7 @@ Java.perform(function () {
             console.log("[!] 경고: 동일한 초기화 비밀번호가 중복 생성됨!");
         } else {
             generatedPasswords.add(newPassword);
-            console.log(`[+] 새로운 초기화 비밀번호 저장: ${newPassword}`);
+            console.log("[+] 새로운 초기화 비밀번호 저장 (값은 마스킹됨)");
         }
 
         return newPassword;
@@ -56,8 +63,8 @@ Java.perform(function () {
     function alertUser(message) {
         Java.scheduleOnMainThread(function () {
             const context = Java.use("android.app.ActivityThread").currentApplication().getApplicationContext();
-            const AlertDialog = Java.use("android.app.AlertDialog");
-            const Builder = AlertDialog.Builder;
+            // 중첩 클래스는 외부 클래스의 속성이 아니라 $ 이름으로 직접 로드해야 함
+            const Builder = Java.use("android.app.AlertDialog$Builder");
 
             const builder = Builder.$new(context);
             builder.setTitle("보안 경고");

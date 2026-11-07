@@ -4,6 +4,13 @@ Java.perform(function () {
     // ======================
     // 1. 거래정보 클래스 및 메서드
     // ======================
+
+    // 민감정보 평문 로깅 방지: 값 대신 길이만 남긴다
+    function mask(value) {
+        if (value === null || value === undefined) return "(null)";
+        return "***" + "(len=" + value.toString().length + ")";
+    }
+
     const TransactionManager = Java.use("com.example.bank.TransactionManager"); // 거래 관리 클래스
     const SignatureManager = Java.use("com.example.bank.SignatureManager");    // 전자서명 관리 클래스
 
@@ -47,9 +54,9 @@ Java.perform(function () {
     // ===========================================
     SignatureManager.verifySignature.implementation = function (signature, publicKey, data) {
         console.log("[*] verifySignature 호출됨");
-        console.log(`[+] 서명 값: ${signature}`);
-        console.log(`[+] 공개키: ${publicKey}`);
-        console.log(`[+] 데이터: ${data}`);
+        console.log(`[+] 서명 값: ${mask(signature)}`);
+        console.log(`[+] 공개키: ${mask(publicKey)}`);
+        console.log(`[+] 데이터 길이: ${data ? data.toString().length : 0}`);
 
         if (publicKey === "test_public_key") {
             console.log("[+] 테스트: 잘못된 공개키 사용 → 검증 실패 처리");
@@ -69,8 +76,8 @@ Java.perform(function () {
 
     SignatureManager.generateSignature.implementation = function (privateKey, data) {
         console.log("[*] generateSignature 호출됨");
-        console.log(`[+] 개인키: ${privateKey}`);
-        console.log(`[+] 데이터: ${data}`);
+        console.log(`[+] 개인키: ${mask(privateKey)}`);
+        console.log(`[+] 데이터 길이: ${data ? data.toString().length : 0}`);
 
         // 테스트: 매번 동일한 서명값 반환 시 무결성 검증 실패 처리
         const fakeSignature = "static_signature";
@@ -83,7 +90,7 @@ Java.perform(function () {
     // ===========================================
     TransactionManager.performAccountTransfer.implementation = function (accountNumber, transferAmount) {
         console.log("[*] performAccountTransfer 호출됨");
-        console.log(`[+] 계좌번호: ${accountNumber}`);
+        console.log(`[+] 계좌번호: ${mask(accountNumber)}`);
         console.log(`[+] 이체 금액: ${transferAmount}`);
 
         if (transferAmount > 1000000) { // 금액 제한 테스트
@@ -102,7 +109,7 @@ Java.perform(function () {
     // ===========================================
     SignatureManager.issueCertificate.implementation = function (userInfo, cost) {
         console.log("[*] issueCertificate 호출됨");
-        console.log(`[+] 사용자 정보: ${userInfo}`);
+        console.log(`[+] 사용자 정보: ${mask(userInfo)}`);
         console.log(`[+] 인증서 발급 비용: ${cost}`);
 
         if (cost < 0) {

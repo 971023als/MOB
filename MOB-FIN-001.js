@@ -4,6 +4,13 @@ Java.perform(function () {
     // ======================
     // 1. 인증 클래스와 메서드
     // ======================
+
+    // 민감정보 평문 로깅 방지: 값 대신 길이만 남긴다
+    function mask(value) {
+        if (value === null || value === undefined) return "(null)";
+        return "***" + "(len=" + value.toString().length + ")";
+    }
+
     const AuthManager = Java.use("com.example.bank.AuthManager");  // 인증 관리 클래스
     const SMSManager = Java.use("com.example.bank.SMSManager");    // SMS 관리 클래스
     const ARSManager = Java.use("com.example.bank.ARSManager");    // ARS 관리 클래스
@@ -13,7 +20,7 @@ Java.perform(function () {
     // 2. SMS 인증 후킹 및 분기 처리
     // ===========================================
     SMSManager.sendSMS.implementation = function (phoneNumber, message) {
-        console.log(`[+] sendSMS 호출됨 - 대상 전화번호: ${phoneNumber}, 메시지 내용: ${message}`);
+        console.log(`[+] sendSMS 호출됨 - 대상 전화번호: ${mask(phoneNumber)}, 메시지 길이: ${message ? message.length : 0}`);
 
         if (phoneNumber === "01012345678") {
             console.log("[+] 테스트: 테스트용 번호로 SMS 전송 차단");
@@ -30,7 +37,7 @@ Java.perform(function () {
     };
 
     SMSManager.validateSMSCode.implementation = function (smsCode) {
-        console.log(`[+] validateSMSCode 호출됨 - 입력 SMS 코드: ${smsCode}`);
+        console.log(`[+] validateSMSCode 호출됨 - 입력 SMS 코드: ${mask(smsCode)}`);
 
         if (smsCode === "000000") {
             console.log("[+] 테스트: 폐기된 SMS 코드 입력 → 인증 강제 성공");
@@ -50,7 +57,7 @@ Java.perform(function () {
     // 3. ARS 인증 후킹 및 분기 처리
     // ===========================================
     ARSManager.initiateARSCall.implementation = function (phoneNumber) {
-        console.log(`[+] initiateARSCall 호출됨 - 대상 전화번호: ${phoneNumber}`);
+        console.log(`[+] initiateARSCall 호출됨 - 대상 전화번호: ${mask(phoneNumber)}`);
 
         if (phoneNumber === "01098765432") {
             console.log("[+] 테스트: 테스트용 번호로 ARS 호출 차단");
@@ -66,7 +73,7 @@ Java.perform(function () {
     };
 
     ARSManager.validateARSResponse.implementation = function (responseCode) {
-        console.log(`[+] validateARSResponse 호출됨 - 입력 ARS 응답 코드: ${responseCode}`);
+        console.log(`[+] validateARSResponse 호출됨 - 입력 ARS 응답 코드: ${mask(responseCode)}`);
 
         if (responseCode === "1234") {
             console.log("[+] 테스트: 예상 가능한 ARS 응답 코드 입력 → 인증 강제 성공");

@@ -8,6 +8,7 @@ Java.perform(function () {
     var PrintWriter = Java.use("java.io.PrintWriter");
     var OutputStreamWriter = Java.use("java.io.OutputStreamWriter");
     var ByteArrayOutputStream = Java.use("java.io.ByteArrayOutputStream");
+    var ByteArrayInputStream = Java.use("java.io.ByteArrayInputStream");
 
     var sensitiveKeys = ["sessionId", "token", "authToken", "JSESSIONID", "Bearer", "cookie"];
 
@@ -46,7 +47,18 @@ Java.perform(function () {
     HttpURLConnection.getInputStream.implementation = function () {
         console.log("[*] HttpURLConnection.getInputStream 후킹...");
         var inputStream = this.getInputStream();
-        var reader = BufferedReader.$new(InputStreamReader.$new(inputStream));
+
+        // 스트림을 소비하면 앱이 EOF를 받으므로, 바이트로 모두 읽어 보관하고
+        // 분석 후 동일 내용의 새 ByteArrayInputStream을 반환한다.
+        var baos = ByteArrayOutputStream.$new();
+        var buffer = Java.array("byte", new Array(4096).fill(0));
+        var read;
+        while ((read = inputStream.read(buffer)) !== -1) {
+            baos.write(buffer, 0, read);
+        }
+        var bodyBytes = baos.toByteArray();
+
+        var reader = BufferedReader.$new(InputStreamReader.$new(ByteArrayInputStream.$new(bodyBytes)));
         var line;
         console.log("[*] HTTP 응답 본문 읽는 중:");
         while ((line = reader.readLine()) !== null) {
@@ -60,30 +72,16 @@ Java.perform(function () {
                 console.warn("[!] 응답 본문에 에러 메시지 탐지됨: " + line);
             }
         }
-        return inputStream;
+        return ByteArrayInputStream.$new(bodyBytes);
     };
 
     // HttpURLConnection.getOutputStream 후킹 (요청 본문 쓰기)
+    // 기존 코드는 JS에서 Java 객체의 write를 덮어써서 실제로는 가로채기가 동작하지 않았고,
+    // 즉시 close()까지 호출해 앱의 전송을 깼다. 요청 본문 감시는 OutputStream.write 후킹이 필요하므로
+    // 여기서는 호출 사실만 기록하고 원래 스트림을 그대로 반환한다.
     HttpURLConnection.getOutputStream.implementation = function () {
-        console.log("[*] HttpURLConnection.getOutputStream 후킹...");
-        var outputStream = this.getOutputStream();
-        var byteStream = ByteArrayOutputStream.$new();
-        var writer = PrintWriter.$new(OutputStreamWriter.$new(byteStream));
-
-        writer.write = function (str) {
-            console.log("[+] 요청 본문 가로채기: " + str);
-            for (var i = 0; i < sensitiveKeys.length; i++) {
-                if (str.includes(sensitiveKeys[i])) {
-                    console.warn("[!] 요청 본문에 민감한 데이터 탐지됨: " + str);
-                }
-            }
-            if (str.includes("password") || str.includes("passwd")) {
-                console.warn("[!] 요청 본문에 비밀번호 관련 데이터 탐지됨: " + str);
-            }
-            this.write(str);
-        };
-        writer.close();
-        return outputStream;
+        console.log("[*] HttpURLConnection.getOutputStream 호출됨 (요청 본문 전송 예정)");
+        return this.getOutputStream();
     };
 
     // HttpURLConnection.disconnect 후킹

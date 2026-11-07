@@ -2,12 +2,12 @@
 
 . function.sh
 
-TMP1=`SCRIPTNAME`.log
+TMP1=${SCRIPTNAME}.log
 > $TMP1
 
 BAR
 
-CODE [DBM-012] Listener Control Utility(lsnrctl) 보안 설정 미흡
+CODE "[DBM-012] Listener Control Utility(lsnrctl) 보안 설정 미흡"
 
 cat << EOF >> $result
 [양호]: Listener Control Utility 보안 설정이 적절히 적용된 경우

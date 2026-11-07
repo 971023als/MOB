@@ -2,7 +2,7 @@
 
 . function.sh
 
-TMP1=$(SCRIPTNAME).log
+TMP1=${SCRIPTNAME}.log
 > $TMP1
 
 BAR
@@ -28,7 +28,10 @@ echo "Checking for unnecessary privileges granted to PUBLIC role..."
 
 # Check for unnecessary PUBLIC role privileges
 # Replace with the actual query that lists privileges for the PUBLIC role in your database
-UNNECESSARY_PRIVILEGES=$($DB_CMD -u "$DB_USER" -p"$DB_PASS" -e "CHECK QUERY TO LIST PRIVILEGES FOR PUBLIC ROLE;")
+# 비밀번호를 명령행 인자(-p"$DB_PASS")로 넘기면 프로세스 목록(ps)에 노출된다 (CWE-214).
+# 환경변수로 전달하고 사용 후 unset 한다. (mysql은 MYSQL_PWD, psql은 PGPASSWORD 등 도구별 변수명 사용)
+UNNECESSARY_PRIVILEGES=$(DB_TOOL_PASS="$DB_PASS" $DB_CMD -u "$DB_USER" -e "CHECK QUERY TO LIST PRIVILEGES FOR PUBLIC ROLE;")
+unset DB_PASS DB_TOOL_PASS
 
 # Check if unnecessary privileges are granted
 if [ -z "$UNNECESSARY_PRIVILEGES" ]; then

@@ -8,12 +8,14 @@ Java.perform(function () {
     // 1. 세션 ID 생성 과정 추적 및 복잡성 확인
     // ====================================================
     UUID.randomUUID.implementation = function () {
-        const sessionId = this.randomUUID.call(this);
-        console.log(`[+] UUID 생성됨: ${sessionId}`);
+        const sessionId = this.randomUUID();
+        // 반환값은 Java UUID 객체이므로 문자열로 변환해야 길이·패턴 검사가 동작한다
+        const sessionIdStr = sessionId.toString();
+        console.log(`[+] UUID 생성됨: ${sessionIdStr}`);
 
         // 세션 ID 패턴 분석
-        if (isWeakSessionID(sessionId)) {
-            console.warn(`[!] 약한 세션 ID 감지: ${sessionId}`);
+        if (isWeakSessionID(sessionIdStr)) {
+            console.warn(`[!] 약한 세션 ID 감지: ${sessionIdStr}`);
             alertUser("약한 세션 ID가 생성되었습니다. 복잡성을 강화하세요.");
         }
 
@@ -52,8 +54,8 @@ Java.perform(function () {
     function alertUser(message) {
         Java.scheduleOnMainThread(function () {
             const context = Java.use("android.app.ActivityThread").currentApplication().getApplicationContext();
-            const AlertDialog = Java.use("android.app.AlertDialog");
-            const Builder = AlertDialog.Builder;
+            // 중첩 클래스는 외부 클래스의 속성이 아니라 $ 이름으로 직접 로드해야 함
+            const Builder = Java.use("android.app.AlertDialog$Builder");
 
             const builder = Builder.$new(context);
             builder.setTitle("보안 경고");

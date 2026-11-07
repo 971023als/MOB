@@ -4,6 +4,13 @@ Java.perform(function () {
     // ======================
     // 1. 인증 및 비밀번호 관리 클래스
     // ======================
+
+    // 민감정보 평문 로깅 방지: 값 대신 길이만 남긴다
+    function mask(value) {
+        if (value === null || value === undefined) return "(null)";
+        return "***" + "(len=" + value.toString().length + ")";
+    }
+
     const AuthManager = Java.use("com.example.bank.AuthManager"); // 인증 관리 클래스
     const PasswordManager = Java.use("com.example.bank.PasswordManager"); // 비밀번호 관리 클래스
 
@@ -12,9 +19,9 @@ Java.perform(function () {
     // ===========================================
     PasswordManager.changePassword.implementation = function (oldPassword, newPassword, verificationCode) {
         console.log("[*] changePassword 호출됨");
-        console.log(`[+] 기존 비밀번호: ${oldPassword}`);
-        console.log(`[+] 새 비밀번호: ${newPassword}`);
-        console.log(`[+] 본인확인 코드: ${verificationCode}`);
+        console.log(`[+] 기존 비밀번호: ${mask(oldPassword)}`);
+        console.log(`[+] 새 비밀번호: ${mask(newPassword)}`);
+        console.log(`[+] 본인확인 코드: ${mask(verificationCode)}`);
 
         // 본인확인 코드 유무 확인
         if (!verificationCode || verificationCode.length === 0) {
@@ -41,7 +48,7 @@ Java.perform(function () {
     // 3. 본인확인 코드 검증 메서드 후킹
     // ===========================================
     AuthManager.validateVerificationCode.implementation = function (verificationCode) {
-        console.log(`[+] validateVerificationCode 호출됨 - 본인확인 코드: ${verificationCode}`);
+        console.log(`[+] validateVerificationCode 호출됨 - 본인확인 코드: ${mask(verificationCode)}`);
 
         // 테스트용으로 잘못된 코드 처리
         if (verificationCode === "000000") {
@@ -59,7 +66,7 @@ Java.perform(function () {
     // 4. 테스트용 비밀번호 변경 시도
     // ===========================================
     PasswordManager.simulatePasswordChange.implementation = function (oldPassword, newPassword) {
-        console.log(`[+] simulatePasswordChange 호출됨 - 기존 비밀번호: ${oldPassword}, 새 비밀번호: ${newPassword}`);
+        console.log(`[+] simulatePasswordChange 호출됨 - 기존 비밀번호: ${mask(oldPassword)}, 새 비밀번호: ${mask(newPassword)}`);
 
         // 본인확인 절차 없이 변경 시도
         const isVerified = AuthManager.validateVerificationCode(null);

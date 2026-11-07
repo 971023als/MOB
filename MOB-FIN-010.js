@@ -4,6 +4,13 @@ Java.perform(function () {
     // ======================
     // 1. 비밀번호 관리 클래스
     // ======================
+
+    // 민감정보 평문 로깅 방지: 값 대신 길이만 남긴다
+    function mask(value) {
+        if (value === null || value === undefined) return "(null)";
+        return "***" + "(len=" + value.toString().length + ")";
+    }
+
     const PasswordManager = Java.use("com.example.bank.PasswordManager"); // 비밀번호 관리 클래스
     const NetworkManager = Java.use("com.example.network.NetworkManager"); // 네트워크 관리 클래스
     const UsedPasswords = []; // 과거에 사용된 비밀번호를 저장할 배열
@@ -45,8 +52,8 @@ Java.perform(function () {
 
     PasswordManager.changePassword.implementation = function (oldPassword, newPassword) {
         console.log("[*] changePassword 호출됨");
-        console.log(`[+] 기존 비밀번호: ${oldPassword}`);
-        console.log(`[+] 새 비밀번호: ${newPassword}`);
+        console.log(`[+] 기존 비밀번호: ${mask(oldPassword)}`);
+        console.log(`[+] 새 비밀번호: ${mask(newPassword)}`);
 
         // 비밀번호 복잡도 검증
         if (!isPasswordComplexEnough(newPassword)) {
@@ -69,7 +76,7 @@ Java.perform(function () {
         // 비밀번호 변경 성공 시 새로운 비밀번호를 목록에 추가
         if (result) {
             UsedPasswords.push(newPassword);
-            console.log(`[+] 새 비밀번호가 과거 비밀번호 목록에 추가됨: ${newPassword}`);
+            console.log("[+] 새 비밀번호가 과거 비밀번호 목록에 추가됨");
         }
 
         return result;
@@ -80,13 +87,13 @@ Java.perform(function () {
     // ===========================================
     NetworkManager.sendRequest.implementation = function (url, data) {
         console.log(`[+] sendRequest 호출됨 - URL: ${url}`);
-        console.log(`[+] 요청 데이터: ${JSON.stringify(data)}`);
+        console.log(`[+] 요청 데이터 길이: ${data ? data.toString().length : 0}`);
 
         // 비밀번호 변경 요청 탐지
         if (url.includes("/changePassword")) {
             console.log("[!] 비밀번호 변경 요청 탐지");
             const requestData = JSON.parse(data);
-            console.log(`[+] 요청 데이터 분석: ${JSON.stringify(requestData)}`);
+            console.log(`[+] 요청 데이터 분석: 비밀번호 필드는 마스킹됨 (newPassword=${mask(requestData.newPassword)})`);
 
             // 요청 데이터 변조 테스트
             if (requestData.newPassword === "weakpassword") {

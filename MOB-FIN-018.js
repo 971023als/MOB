@@ -31,7 +31,11 @@ Java.perform(function () {
 
             inputStream.close();
             const hash = digest.digest();
-            const hexHash = hash.map(b => ('0' + (b & 0xFF).toString(16)).slice(-2)).join('');
+            // Java byte[]에는 JS map이 없으므로 루프로 16진수 변환
+            let hexHash = "";
+            for (let i = 0; i < hash.length; i++) {
+                hexHash += ("0" + (hash[i] & 0xFF).toString(16)).slice(-2);
+            }
             console.log(`[+] APK 해시 값: ${hexHash}`);
 
             if (hexHash === expectedHash) {
@@ -75,7 +79,11 @@ Java.perform(function () {
 
             inputStream.close();
             const hash = digest.digest();
-            const hexHash = hash.map(b => ('0' + (b & 0xFF).toString(16)).slice(-2)).join('');
+            // Java byte[]에는 JS map이 없으므로 루프로 16진수 변환
+            let hexHash = "";
+            for (let i = 0; i < hash.length; i++) {
+                hexHash += ("0" + (hash[i] & 0xFF).toString(16)).slice(-2);
+            }
             console.log(`[+] 라이브러리 해시 값: ${hexHash}`);
 
             if (hexHash === expectedHash) {

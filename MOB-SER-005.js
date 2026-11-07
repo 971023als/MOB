@@ -4,14 +4,21 @@ Java.perform(function () {
     // ======================
     // 1. 인증 코드 생성 메서드 후킹
     // ======================
+
+    // 민감정보 평문 로깅 방지: 값 대신 길이만 남긴다
+    function mask(value) {
+        if (value === null || value === undefined) return "(null)";
+        return "***" + "(len=" + value.toString().length + ")";
+    }
+
     const SmsManager = Java.use("android.telephony.SmsManager"); // SMS 관리 클래스
     const Random = Java.use("java.util.Random"); // 랜덤 값 생성기
     let generatedCodes = new Set(); // 생성된 인증 코드 저장
 
     // SMS 인증 코드 생성 로직 후킹
     SmsManager.sendTextMessage.overload("java.lang.String", "java.lang.String", "java.lang.String", "android.app.PendingIntent", "android.app.PendingIntent").implementation = function (destinationAddress, scAddress, text, sentIntent, deliveryIntent) {
-        console.log(`[+] SMS 전송 감지 - 목적지: ${destinationAddress}`);
-        console.log(`[+] 전송 메시지: ${text}`);
+        console.log(`[+] SMS 전송 감지 - 목적지: ${mask(destinationAddress)}`);
+        console.log(`[+] 전송 메시지: ${mask(text)}`);
 
         if (isCodeFixed(text)) {
             console.log("[!] 경고: 고정된 인증 코드 감지!");
@@ -26,7 +33,7 @@ Java.perform(function () {
     // Random 클래스 후킹
     Random.nextInt.overload("int").implementation = function (bound) {
         const result = this.nextInt(bound);
-        console.log(`[+] Random 값 생성: ${result}`);
+        console.log(`[+] Random 값 생성: ${mask(result.toString())}`);
         trackCode(result);
         return result;
     };
@@ -60,8 +67,8 @@ Java.perform(function () {
     function alertUser(message) {
         Java.scheduleOnMainThread(function () {
             const context = Java.use("android.app.ActivityThread").currentApplication().getApplicationContext();
-            const AlertDialog = Java.use("android.app.AlertDialog");
-            const Builder = AlertDialog.Builder;
+            // 중첩 클래스는 외부 클래스의 속성이 아니라 $ 이름으로 직접 로드해야 함
+            const Builder = Java.use("android.app.AlertDialog$Builder");
 
             const builder = Builder.$new(context);
             builder.setTitle("보안 경고");

@@ -6,12 +6,15 @@ Java.perform(function () {
     HttpURLConnection.setRequestMethod.implementation = function (method) {
         console.log("[+] HttpURLConnection.setRequestMethod() 호출됨");
         console.log("    요청 메서드: " + method);
-        if (method.toUpperCase() === "HTTP") {
-            console.warn("[!] 안전하지 않은 프로토콜 탐지됨: HTTP (암호화되지 않음)");
-        } else if (method.toUpperCase() === "HTTPS") {
+        // 기존 코드는 메서드(GET/POST 등)를 "HTTP"/"HTTPS"와 비교해 항상 "알 수 없는 프로토콜"이었다.
+        // 암호화 여부는 URL 스킴으로 판정해야 한다.
+        var protocol = this.getURL().getProtocol().toLowerCase();
+        if (protocol === "http") {
+            console.warn("[!] 안전하지 않은 프로토콜 탐지됨: " + this.getURL().toString() + " (암호화되지 않음)");
+        } else if (protocol === "https") {
             console.log("[+] 안전한 프로토콜 사용됨: HTTPS");
         } else {
-            console.warn("[!] 알 수 없는 프로토콜 요청: " + method);
+            console.warn("[!] 알 수 없는 프로토콜 요청: " + protocol);
         }
         return this.setRequestMethod(method);
     };
