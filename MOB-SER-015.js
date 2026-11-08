@@ -49,7 +49,8 @@ Java.perform(function () {
         const xmlBytes = baos.toByteArray();
 
         const xmlContent = Java.use("java.lang.String").$new(xmlBytes);
-        console.log(`[XML Content]:\n${xmlContent}`);
+        // XML 원문은 민감한 값을 포함할 수 있으므로 크기만 기록한다
+        console.log(`[XML Content]: ${xmlBytes.length}바이트 수신 (내용 비공개)`);
 
         // XML 내부에 DOCTYPE 또는 ENTITY 태그 탐지
         if (xmlContent.includes("<!DOCTYPE") || xmlContent.includes("<!ENTITY")) {
