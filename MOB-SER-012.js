@@ -11,11 +11,13 @@ Java.perform(function () {
         const sessionId = this.randomUUID();
         // 반환값은 Java UUID 객체이므로 문자열로 변환해야 길이·패턴 검사가 동작한다
         const sessionIdStr = sessionId.toString();
-        console.log(`[+] UUID 생성됨: ${sessionIdStr}`);
+        // 세션 ID는 민감한 값을 포함할 수 있으므로 평문 전체를 로그에 남기지 않고 길이만 기록한다
+        const maskedSessionId = "(길이 " + sessionIdStr.length + "자)";
+        console.log(`[+] UUID 생성됨: ${maskedSessionId}`);
 
         // 세션 ID 패턴 분석
         if (isWeakSessionID(sessionIdStr)) {
-            console.warn(`[!] 약한 세션 ID 감지: ${sessionIdStr}`);
+            console.warn(`[!] 약한 세션 ID 감지: ${maskedSessionId}`);
             alertUser("약한 세션 ID가 생성되었습니다. 복잡성을 강화하세요.");
         }
 
@@ -26,7 +28,8 @@ Java.perform(function () {
         this.nextBytes(bytes);
         const generatedBytes = Java.array('byte', bytes);
 
-        console.log(`[+] SecureRandom 데이터 생성됨: ${generatedBytes}`);
+        // 난수 값은 민감한 값을 포함할 수 있으므로 개수만 기록한다
+        console.log(`[+] SecureRandom 데이터 생성됨: ${generatedBytes.length}바이트 (값 비공개)`);
     };
 
     // ====================================================
